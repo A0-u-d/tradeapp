@@ -1,18 +1,6 @@
 console.log("JS file loaded.");
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM loaded.");
-  const searchBtn = document.getElementById("searchBtn");
-  if (searchBtn) {
-    searchBtn.addEventListener("click", () => {
-      console.log("Search button clicked");
-    });
-  } else {
-    console.error("searchBtn not found");
-  }
-});
-
-const apiKey = "58VN3XKIWSR2NQ7G"; // Replace with your Alpha Vantage API key
+const apiKey = "58VN3XKIWSR2NQ7G"; // Your Alpha Vantage API key
 
 // Beginner tips shown randomly
 const beginnerTips = [
@@ -54,25 +42,17 @@ function getAdvice(changePercent) {
   return { advice: "No clear trend — maybe wait", signalClass: "wait", icon: "⏳" };
 }
 
-// Fetch data from Alpha Vantage for given symbol
+// Fetch data from Alpha Vantage for given symbol, with API limit handling
 async function fetchStockData(symbol) {
-  // Use Forex and commodities with different API functions if needed
   let functionName = "GLOBAL_QUOTE";
-
-  // For Forex pairs, use CURRENCY_EXCHANGE_RATE
   if (dynamicForex.find((f) => f.symbol === symbol)) {
     functionName = "CURRENCY_EXCHANGE_RATE";
   }
 
-  // Commodities and stocks use GLOBAL_QUOTE
-
-  // Build URL based on function
   let url;
   if (functionName === "GLOBAL_QUOTE") {
     url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
   } else if (functionName === "CURRENCY_EXCHANGE_RATE") {
-    // Forex pairs like EURUSD split into from_currency and to_currency
-    // symbol is like EURUSD => from=EUR, to=USD
     const fromCurrency = symbol.slice(0, 3);
     const toCurrency = symbol.slice(3, 6);
     url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${fromCurrency}&to_currency=${toCurrency}&apikey=${apiKey}`;
@@ -81,9 +61,21 @@ async function fetchStockData(symbol) {
   try {
     const resp = await fetch(url);
     const data = await resp.json();
+
+    if (data.Note) {
+      console.warn("API Rate Limit reached:", data.Note);
+      return { error: "API limit reached", message: data.Note };
+    }
+
+    if (data["Error Message"]) {
+      console.warn("API returned error:", data["Error Message"]);
+      return { error: "API error", message: data["Error Message"] };
+    }
+
     return { data, functionName };
-  } catch {
-    return null;
+  } catch (err) {
+    console.error("Fetch error:", err);
+    return { error: "Fetch failed", message: err.message };
   }
 }
 
@@ -100,10 +92,17 @@ async function showStockInfo() {
   infoBox.innerHTML = "<p>Loading...</p>";
 
   const result = await fetchStockData(symbol);
+
   if (!result) {
     infoBox.innerHTML = `<p>Could not fetch data for <strong>${symbol}</strong>. Try again.</p>`;
     return;
   }
+
+  if (result.error) {
+    infoBox.innerHTML = `<p><strong>Error:</strong> ${result.message}</p>`;
+    return;
+  }
+
   const { data, functionName } = result;
 
   if (functionName === "GLOBAL_QUOTE") {
@@ -129,7 +128,6 @@ async function showStockInfo() {
       return;
     }
     const price = parseFloat(exchangeData["5. Exchange Rate"]).toFixed(4);
-    // Forex API does not provide % change, so show only price
     infoBox.innerHTML = `
       <h2>${symbol} 🌍</h2>
       <p>Exchange Rate: ${price}</p>
@@ -141,24 +139,19 @@ async function showStockInfo() {
 
 // Show suggested stocks, forex, commodities with buy signals (change > 2%)
 async function showSuggestions() {
-  // Stocks
   const stockUL = document.getElementById("suggestedStocks");
-  stockUL.innerHTML = "<li>Loading stocks...</li>";
-
-  // Forex
   const forexUL = document.getElementById("suggestedForex");
-  forexUL.innerHTML = "<li>Loading forex...</li>";
-
-  // Commodities
   const commoditiesUL = document.getElementById("suggestedCommodities");
+
+  stockUL.innerHTML = "<li>Loading stocks...</li>";
+  forexUL.innerHTML = "<li>Loading forex...</li>";
   commoditiesUL.innerHTML = "<li>Loading commodities...</li>";
 
-  // Helper to fetch and filter strong buy signals
   async function filterStrongBuys(list, isForex = false) {
     const results = [];
     for (const item of list) {
       const result = await fetchStockData(item.symbol);
-      if (!result) continue;
+      if (!result || result.error) continue;
       const { data, functionName } = result;
 
       if (functionName === "GLOBAL_QUOTE") {
@@ -171,7 +164,6 @@ async function showSuggestions() {
           results.push({ ...item, price, changePercent, advice, icon });
         }
       } else if (functionName === "CURRENCY_EXCHANGE_RATE" && isForex) {
-        // Forex data has no % change - just list all
         const exchangeData = data["Realtime Currency Exchange Rate"];
         if (!exchangeData) continue;
         const price = parseFloat(exchangeData["5. Exchange Rate"]).toFixed(4);
@@ -181,55 +173,51 @@ async function showSuggestions() {
     return results;
   }
 
-  // Get filtered lists
   const strongStocks = await filterStrongBuys(dynamicStocks);
   const strongForex = await filterStrongBuys(dynamicForex, true);
   const strongCommodities = await filterStrongBuys(dynamicCommodities);
 
-  // Display stocks
-  if (strongStocks.length === 0) {
-    stockUL.innerHTML = "<li>No strong buy signals currently.</li>";
-  } else {
-    stockUL.innerHTML = "";
-    for (const stock of strongStocks) {
-      stockUL.innerHTML += `<li><strong>${stock.symbol}</strong> ($${stock.price}): ${stock.reason} ${stock.icon}</li>`;
-    }
-  }
+  stockUL.innerHTML = strongStocks.length === 0
+    ? "<li>No strong buy signals currently.</li>"
+    : strongStocks.map(s => `<li><strong>${s.symbol}</strong> ($${s.price}): ${s.reason} ${s.icon}</li>`).join("");
 
-  // Display forex
-  if (strongForex.length === 0) {
-    forexUL.innerHTML = "<li>No forex data available.</li>";
-  } else {
-    forexUL.innerHTML = "";
-    for (const fx of strongForex) {
-      forexUL.innerHTML += `<li><strong>${fx.symbol}</strong> (Rate: ${fx.price}): ${fx.reason} ${fx.icon}</li>`;
-    }
-  }
+  forexUL.innerHTML = strongForex.length === 0
+    ? "<li>No forex data available.</li>"
+    : strongForex.map(fx => `<li><strong>${fx.symbol}</strong> (Rate: ${fx.price}): ${fx.reason} ${fx.icon}</li>`).join("");
 
-  // Display commodities
-  if (strongCommodities.length === 0) {
-    commoditiesUL.innerHTML = "<li>No strong buy signals currently.</li>";
-  } else {
-    commoditiesUL.innerHTML = "";
-    for (const comm of strongCommodities) {
-      commoditiesUL.innerHTML += `<li><strong>${comm.symbol}</strong> ($${comm.price}): ${comm.reason} ${comm.icon}</li>`;
-    }
+  commoditiesUL.innerHTML = strongCommodities.length === 0
+    ? "<li>No strong buy signals currently.</li>"
+    : strongCommodities.map(c => `<li><strong>${c.symbol}</strong> ($${c.price}): ${c.reason} ${c.icon}</li>`).join("");
+}
+
+// Show a beginner tip below the info box
+function showBeginnerTip() {
+  const tip = beginnerTips[Math.floor(Math.random() * beginnerTips.length)];
+  const infoBox = document.getElementById("stockInfo");
+  if (infoBox) {
+    infoBox.innerHTML += `<p><em>💡 Tip: ${tip}</em></p>`;
   }
 }
 
 // Toggle glossary visibility
 function toggleGlossary() {
   const list = document.getElementById("glossaryList");
-  list.classList.toggle("hidden");
+  if (list) list.classList.toggle("hidden");
 }
 
+// Initialize event listeners and show suggestions on DOM ready
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("searchBtn").addEventListener("click", showStockInfo);
-  document.getElementById("glossaryToggle").addEventListener("click", toggleGlossary);
+  console.log("DOM loaded.");
+
+  const searchBtn = document.getElementById("searchBtn");
+  if (searchBtn) {
+    searchBtn.addEventListener("click", showStockInfo);
+  }
+
+  const glossaryToggle = document.getElementById("glossaryToggle");
+  if (glossaryToggle) {
+    glossaryToggle.addEventListener("click", toggleGlossary);
+  }
+
   showSuggestions();
 });
-
-if (data.Note) {
-  infoBox.innerHTML = `<p>API limit reached: ${data.Note}</p>`;
-  return;
-}
