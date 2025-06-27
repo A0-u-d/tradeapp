@@ -1,6 +1,6 @@
 console.log("JS file loaded.");
 
-const apiKey = "58VN3XKIWSR2NQ7G"; // Your Alpha Vantage API key
+const apiKey = "MQ7F1PQ6NS2ZSZ95"; // Your Alpha Vantage API key
 
 // Beginner tips shown randomly
 const beginnerTips = [
