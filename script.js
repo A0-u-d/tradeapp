@@ -1,3 +1,17 @@
+console.log("JS file loaded.");
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM loaded.");
+  const searchBtn = document.getElementById("searchBtn");
+  if (searchBtn) {
+    searchBtn.addEventListener("click", () => {
+      console.log("Search button clicked");
+    });
+  } else {
+    console.error("searchBtn not found");
+  }
+});
+
 const apiKey = "58VN3XKIWSR2NQ7G"; // Replace with your Alpha Vantage API key
 
 // Beginner tips shown randomly
