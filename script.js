@@ -1,4 +1,4 @@
-const apiKey = "T6ZR4JY3E5GZ1JTQ"; // Replace with your Alpha Vantage API key
+const apiKey = "58VN3XKIWSR2NQ7G"; // Replace with your Alpha Vantage API key
 
 // Beginner tips shown randomly
 const beginnerTips = [
