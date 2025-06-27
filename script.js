@@ -22,13 +22,13 @@ const dynamicStocks = [
 const dynamicForex = [
   { symbol: "EURUSD", reason: "Popular currency pair, Euro vs USD" },
   { symbol: "GBPUSD", reason: "British Pound vs USD" },
-  { symbol: "USDJPY", reason: "USD vs Japanese Yen" },
+  { symbol: "USDJPY", reason: "USD vs Japanese Yen" }
 ];
 
 const dynamicCommodities = [
   { symbol: "GC=F", reason: "Gold futures" },
   { symbol: "CL=F", reason: "Crude Oil futures" },
-  { symbol: "SI=F", reason: "Silver futures" },
+  { symbol: "SI=F", reason: "Silver futures" }
 ];
 
 // Utility function: return advice object based on change %
@@ -42,10 +42,11 @@ function getAdvice(changePercent) {
   return { advice: "No clear trend — maybe wait", signalClass: "wait", icon: "⏳" };
 }
 
-// Fetch data from Alpha Vantage for given symbol, with API limit handling
+// Fetch data from Alpha Vantage for given symbol
 async function fetchStockData(symbol) {
   let functionName = "GLOBAL_QUOTE";
-  if (dynamicForex.find((f) => f.symbol === symbol)) {
+
+  if (dynamicForex.find(f => f.symbol === symbol)) {
     functionName = "CURRENCY_EXCHANGE_RATE";
   }
 
@@ -63,25 +64,20 @@ async function fetchStockData(symbol) {
     const data = await resp.json();
 
     if (data.Note) {
-      console.warn("API Rate Limit reached:", data.Note);
-      return { error: "API limit reached", message: data.Note };
-    }
-
-    if (data["Error Message"]) {
-      console.warn("API returned error:", data["Error Message"]);
-      return { error: "API error", message: data["Error Message"] };
+      throw new Error("API limit reached: " + data.Note);
     }
 
     return { data, functionName };
-  } catch (err) {
-    console.error("Fetch error:", err);
-    return { error: "Fetch failed", message: err.message };
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return { error: error.message };
   }
 }
 
 // Show stock/forex/commodity info after search
 async function showStockInfo() {
-  const symbol = document.getElementById("stockInput").value.toUpperCase().trim();
+  const symbolInput = document.getElementById("stockInput");
+  const symbol = symbolInput.value.toUpperCase().trim();
   const infoBox = document.getElementById("stockInfo");
   infoBox.innerHTML = "";
   if (!symbol) {
@@ -93,13 +89,8 @@ async function showStockInfo() {
 
   const result = await fetchStockData(symbol);
 
-  if (!result) {
-    infoBox.innerHTML = `<p>Could not fetch data for <strong>${symbol}</strong>. Try again.</p>`;
-    return;
-  }
-
   if (result.error) {
-    infoBox.innerHTML = `<p><strong>Error:</strong> ${result.message}</p>`;
+    infoBox.innerHTML = `<p>${result.error}</p>`;
     return;
   }
 
@@ -152,6 +143,7 @@ async function showSuggestions() {
     for (const item of list) {
       const result = await fetchStockData(item.symbol);
       if (!result || result.error) continue;
+
       const { data, functionName } = result;
 
       if (functionName === "GLOBAL_QUOTE") {
@@ -177,47 +169,52 @@ async function showSuggestions() {
   const strongForex = await filterStrongBuys(dynamicForex, true);
   const strongCommodities = await filterStrongBuys(dynamicCommodities);
 
-  stockUL.innerHTML = strongStocks.length === 0
-    ? "<li>No strong buy signals currently.</li>"
-    : strongStocks.map(s => `<li><strong>${s.symbol}</strong> ($${s.price}): ${s.reason} ${s.icon}</li>`).join("");
+  // Display stocks
+  if (strongStocks.length === 0) {
+    stockUL.innerHTML = "<li>No strong buy signals currently.</li>";
+  } else {
+    stockUL.innerHTML = "";
+    for (const stock of strongStocks) {
+      stockUL.innerHTML += `<li><strong>${stock.symbol}</strong> ($${stock.price}): ${stock.reason} ${stock.icon}</li>`;
+    }
+  }
 
-  forexUL.innerHTML = strongForex.length === 0
-    ? "<li>No forex data available.</li>"
-    : strongForex.map(fx => `<li><strong>${fx.symbol}</strong> (Rate: ${fx.price}): ${fx.reason} ${fx.icon}</li>`).join("");
+  // Display forex
+  if (strongForex.length === 0) {
+    forexUL.innerHTML = "<li>No forex data available.</li>";
+  } else {
+    forexUL.innerHTML = "";
+    for (const fx of strongForex) {
+      forexUL.innerHTML += `<li><strong>${fx.symbol}</strong> (Rate: ${fx.price}): ${fx.reason} ${fx.icon}</li>`;
+    }
+  }
 
-  commoditiesUL.innerHTML = strongCommodities.length === 0
-    ? "<li>No strong buy signals currently.</li>"
-    : strongCommodities.map(c => `<li><strong>${c.symbol}</strong> ($${c.price}): ${c.reason} ${c.icon}</li>`).join("");
+  // Display commodities
+  if (strongCommodities.length === 0) {
+    commoditiesUL.innerHTML = "<li>No strong buy signals currently.</li>";
+  } else {
+    commoditiesUL.innerHTML = "";
+    for (const comm of strongCommodities) {
+      commoditiesUL.innerHTML += `<li><strong>${comm.symbol}</strong> ($${comm.price}): ${comm.reason} ${comm.icon}</li>`;
+    }
+  }
 }
 
-// Show a beginner tip below the info box
+// Show a random beginner tip below the stock info
 function showBeginnerTip() {
-  const tip = beginnerTips[Math.floor(Math.random() * beginnerTips.length)];
   const infoBox = document.getElementById("stockInfo");
-  if (infoBox) {
-    infoBox.innerHTML += `<p><em>💡 Tip: ${tip}</em></p>`;
-  }
+  const tip = beginnerTips[Math.floor(Math.random() * beginnerTips.length)];
+  infoBox.innerHTML += `<p style="margin-top:10px; font-style: italic;">💡 Tip: ${tip}</p>`;
 }
 
 // Toggle glossary visibility
 function toggleGlossary() {
   const list = document.getElementById("glossaryList");
-  if (list) list.classList.toggle("hidden");
+  list.classList.toggle("hidden");
 }
 
-// Initialize event listeners and show suggestions on DOM ready
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM loaded.");
-
-  const searchBtn = document.getElementById("searchBtn");
-  if (searchBtn) {
-    searchBtn.addEventListener("click", showStockInfo);
-  }
-
-  const glossaryToggle = document.getElementById("glossaryToggle");
-  if (glossaryToggle) {
-    glossaryToggle.addEventListener("click", toggleGlossary);
-  }
-
+  document.getElementById("searchBtn").addEventListener("click", showStockInfo);
+  document.getElementById("glossaryToggle").addEventListener("click", toggleGlossary);
   showSuggestions();
 });
