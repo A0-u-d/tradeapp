@@ -1,0 +1,125 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 0;
+    color: #222;
+}
+
+.container {
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 15px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.search-section {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+#stockInput {
+    width: 70%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+}
+
+#searchBtn {
+    padding: 10px 15px;
+    font-size: 1rem;
+    margin-left: 10px;
+    cursor: pointer;
+    border: none;
+    background-color: #5b3cc4;
+    color: white;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+    #searchBtn:hover {
+        background-color: #442a94;
+    }
+
+.info-box {
+    margin-top: 15px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.hidden {
+    display: none;
+}
+
+.suggested-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 30px;
+}
+
+    .suggested-list li {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+        .suggested-list li.buy {
+            background-color: #e0ffe0;
+            border-left: 5px solid #3ebd3e;
+        }
+
+        .suggested-list li.wait {
+            background-color: #fffbe0;
+            border-left: 5px solid #e6d54e;
+        }
+
+        .suggested-list li.sell {
+            background-color: #ffe0e0;
+            border-left: 5px solid #d53e3e;
+        }
+
+        .suggested-list li strong {
+            font-size: 1.1rem;
+        }
+
+    .suggested-list small {
+        display: block;
+        color: #666;
+        margin-top: 3px;
+    }
+
+.glossary-section {
+    text-align: center;
+}
+
+#glossaryToggle {
+    padding: 8px 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    background-color: #5b3cc4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+    #glossaryToggle:hover {
+        background-color: #442a94;
+    }
+
+.glossary-list {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: left;
+    padding-left: 20px;
+    color: #444;
+}
