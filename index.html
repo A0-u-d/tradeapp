@@ -1,49 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Beginner Stock Trading Tips</title>
-    <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Beginner Stock Trading Tips</title>
+<style>
+  .hidden { display: none; }
+  .buy { color: green; }
+  .sell { color: red; }
+  .wait { color: gray; }
+  .info-box { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+  ul { list-style-type: none; padding-left: 0; }
+  li { margin-bottom: 5px; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>📈 Beginner Stock Trading Tips</h1>
 
-        <section class="search-section">
-            <input type="text" id="stockInput" placeholder="Enter stock ticker (e.g. AAPL)" />
-            <button id="searchBtn">Get Advice</button>
-            <div id="stockInfo" class="info-box hidden"></div>
-        </section>
+<div class="container">
+  <h1>📈 Beginner Stock Trading Tips</h1>
 
-        <section class="suggested-section">
-            <h2>🎯 Suggested Stocks</h2>
-            <ul id="suggestedStocks" class="suggested-list">
-                <li>Loading stocks...</li>
-            </ul>
+  <section class="search-section">
+    <input type="text" id="stockInput" placeholder="Enter stock ticker (e.g. AAPL)" />
+    <button id="searchBtn">Get Advice</button>
+    <div id="stockInfo" class="info-box hidden"></div>
+  </section>
 
-            <h2>🌍 Suggested Forex Pairs</h2>
-            <ul id="suggestedForex" class="suggested-list">
-                <li>Loading forex...</li>
-            </ul>
+  <section class="suggested-section">
+    <h2>🎯 Suggested Stocks</h2>
+    <ul id="suggestedStocks" class="suggested-list">
+      <li>Loading stocks...</li>
+    </ul>
 
-            <h2>⛏️ Suggested Commodities</h2>
-            <ul id="suggestedCommodities" class="suggested-list">
-                <li>Loading commodities...</li>
-            </ul>
-        </section>
+    <h2>🌍 Suggested Forex Pairs</h2>
+    <ul id="suggestedForex" class="suggested-list">
+      <li>Loading forex...</li>
+    </ul>
 
-        <section class="glossary-section">
-            <button id="glossaryToggle">📖 Toggle Glossary</button>
-            <ul id="glossaryList" class="glossary-list hidden">
-                <li><strong>Price Change %</strong>: The percent the stock price moved today.</li>
-                <li><strong>✅ Buy Signal</strong>: Price rose more than 2% today.</li>
-                <li><strong>⏳ Wait</strong>: Price moved less than ±2%, no clear trend.</li>
-                <li><strong>⚠️ Sell/Wait</strong>: Price dropped more than 2% today.</li>
-            </ul>
-        </section>
-    </div>
+    <h2>⛏️ Suggested Commodities</h2>
+    <ul id="suggestedCommodities" class="suggested-list">
+      <li>Loading commodities...</li>
+    </ul>
+  </section>
 
-    <script src="script.js"></script>
+  <section class="glossary-section">
+    <button id="glossaryToggle">📖 Toggle Glossary</button>
+    <ul id="glossaryList" class="glossary-list hidden">
+      <li><strong>Price Change %</strong>: The percent the stock price moved today.</li>
+      <li><strong>✅ Buy Signal</strong>: Price rose more than 2% today.</li>
+      <li><strong>⏳ Wait</strong>: Price moved less than ±2%, no clear trend.</li>
+      <li><strong>⚠️ Sell/Wait</strong>: Price dropped more than 2% today.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+console.log("JS file loaded.");
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM loaded.");
+
+  const searchBtn = document.getElementById("searchBtn");
+  if (searchBtn) {
+    console.log("searchBtn found");
+    searchBtn.addEventListener("click", () => {
+      console.log("Search button clicked");
+      showStockInfo();
+    });
+  } else {
+    console.error("searchBtn not found");
+  }
+
+  const glossaryToggle = document.getElementById("glossaryToggle");
+  if (glossaryToggle) {
+    console.log("glossaryToggle found");
+    glossaryToggle.addEventListener("click", () => {
+      console.log("Glossary toggle clicked");
+      toggleGlossary();
+    });
+  } else {
+    console.error("glossaryToggle not found");
+  }
+
+  showSuggestions();
+});
+
+const apiKey = "58VN3XKIWSR2NQ7G"; // Your Alpha Vantage API key
+
+// Beginner tips shown randomly
+const beginnerTips = [
+  "Only invest what you can afford to lose.",
+  "Start by learning how charts work.",
+  "It’s okay to wait — patience is smart.",
+  "Always read company news before buying.",
+  "Practice with a virtual account first!"
+];
+
+// Suggested stocks, forex pairs, and commodities
+const dynamicStocks = [
+  { symbol: "NVDA", reason: "AI growth & semiconductor leader" },
+  { symbol: "JNJ", reason: "Stable dividends & safe defensive pick" },
+  { symbol: "LLY", reason: "Strong pipeline & drug sales growth" },
+  { symbol: "CRWV", reason: "AI infrastructure play (volatile)" }
+];
+
+const dynamicForex = [
+  { symbol: "EURUSD", reason: "Popular currency pair, Euro vs USD" },
+  { symbol: "GBPUSD", reason: "British Pound vs USD" },
+  { symbol: "USDJPY", reason: "USD vs Japanese Yen" },
+];
+
+const dynamicCommodities = [
+  { symbol: "GC=F", reason: "Gold futures" },
+  { symbol: "CL=F", reason: "Crude Oil futures" },
+  { symbol: "SI=F", reason: "Silver futures" },
+];
+
+// Utility function: return advice object based on change %
+function getAdvice(changePercent) {
+  if (!changePercent) return { advice: "No data", signalClass: "wait", icon: "⏳" };
+  const percent = parseFloat(changePercent.replace("%", ""));
+  if (isNaN(percent)) return { advice: "No data", signalClass: "wait", icon: "⏳" };
+
+  if (percent > 2) return { advice: "Strong buy signal", signalClass: "buy", icon: "✅" };
+  if (percent < -2) return { advice: "Price dropping — be cautious", signalClass: "sell", icon: "⚠️" };
+  return { advice: "No clear trend — maybe wait", signalClass: "wait", icon: "⏳" };
+}
+
+// Fetch data from Alpha Vantage for given symbol
+async function fetchStockData(symbol) {
+  let functionName = "GLOBAL_QUOTE";
+
+  if (dynamicForex.find(f => f.symbol === symbol)) {
+    functionName = "CURRENCY_EXCHANGE_RATE";
+  }
+
+  let url = "";
+  if (functionName === "GLOBAL_QUOTE") {
+    url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${apiKey}`;
+  } else if (functionName === "CURRENCY_EXCHANGE_RATE") {
+    const fromCurrency = symbol.slice(0, 3);
+    const toCurrency = symbol.slice(3, 6);
+    url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${fromCurrency}&to_currency=${toCurrency}&apikey=${apiKey}`;
+  }
+
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    // Check if API limit reached or error
+    if (data.Note) {
+      throw new Error("API limit reached. Please try again later.");
+    }
+    if (data["Error Message"]) {
+      throw new Error("Invalid symbol or data unavailable.");
+    }
+
+    return { data, functionName };
+  } catch (err) {
+    console.error("Fetch error:", err.message);
+    return null;
+  }
+}
+
+async function showStockInfo() {
+  const symbolInput = document.getElementById("stockInput");
+  const infoBox = document.getElementById("stockInfo");
+  const symbol = symbolInput.value.toUpperCase().trim();
+
+  infoBox.innerHTML = "";
+  if (!symbol) {
+    infoBox.classList.add("hidden");
+    return;
+  }
+  infoBox.classList.remove("hidden");
+  infoBox.innerHTML = "<p>Loading...</p>";
+
+  const result = await fetchStockData(symbol);
+  if (!result) {
+    infoBox.innerHTML = `<p>Error fetching data for <strong>${symbol}</strong>. Try again later.</p>`;
+    return;
+  }
+
+  const { data, functionName } = result;
+
+  if (functionName === "GLOBAL_QUOTE") {
+    const quote = data["Global Quote"];
+    if (!quote || !quote["05. price"]) {
+      infoBox.innerHTML = `<p>Stock/Commodity <strong>${symbol}</strong> not found or price unavailable.</p>`;
+      return;
+    }
+    const price = parseFloat(quote["05. price"]).toFixed(2);
+    const changePercent = quote["10. change percent"];
+    const { advice, signalClass, icon } = getAdvice(changePercent);
+
+    infoBox.innerHTML = `
+      <h2>${symbol} ${icon}</h2>
+      <p>Price: $${price}</p>
+      <p>Change: ${changePercent}</p>
+      <p><strong>Advice:</strong> ${advice}</p>
+    `;
+  } else if (functionName === "CURRENCY_EXCHANGE_RATE") {
+    const exchangeData = data["Realtime Currency Exchange Rate"];
+    if (!exchangeData) {
+      infoBox.innerHTML = `<p>Forex pair <strong>${symbol}</strong> not found.</p>`;
+      return;
+    }
+    const price = parseFloat(exchangeData["5. Exchange Rate"]).toFixed(4);
+    infoBox.innerHTML = `
+      <h2>${symbol} 🌍</h2>
+      <p>Exchange Rate: ${price}</p>
+      <p><strong>Advice:</strong> Forex data - watch market news and trends.</p>
+    `;
+  }
+  showBeginnerTip();
+}
+
+async function showSuggestions() {
+  const stockUL = document.getElementById("suggestedStocks");
+  const forexUL = document.getElementById("suggestedForex");
+  const commoditiesUL = document.getElementById("suggestedCommodities");
+
+  stockUL.innerHTML = "<li>Loading stocks...</li>";
+  forexUL.innerHTML = "<li>Loading forex...</li>";
+  commoditiesUL.innerHTML = "<li>Loading commodities...</li>";
+
+  async function filterStrongBuys(list, isForex = false) {
+    const results = [];
+    for (const item of list) {
+      const result = await fetchStockData(item.symbol);
+      if (!result) continue;
+
+      const { data, functionName } = result;
+
+      if (functionName === "GLOBAL_QUOTE") {
+        const quote = data["Global Quote"];
+        if (!quote || !quote["05. price"]) continue;
+        const price = parseFloat(quote["05. price"]).toFixed(2);
+        const changePercent = quote["10. change percent"];
+        const { signalClass, icon, advice } = getAdvice(changePercent);
+        if (signalClass === "buy") {
+          results.push({ ...item, price, changePercent, advice, icon });
+        }
+      } else if (functionName === "CURRENCY_EXCHANGE_RATE" && isForex) {
+        const exchangeData = data["Realtime Currency Exchange Rate"];
+        if (!exchangeData) continue;
+        const price = parseFloat(exchangeData["5. Exchange Rate"]).toFixed(4);
+        results.push({ ...item, price, changePercent: "N/A", advice: "Watch market news", icon: "🌍" });
+      }
+    }
+    return results;
+  }
+
+  const strongStocks = await filterStrongBuys(dynamicStocks);
+  const strongForex = await filterStrongBuys(dynamicForex, true);
+  const strongCommodities = await filterStrongBuys(dynamicCommodities);
+
+  if (strongStocks.length === 0) {
+    stockUL.innerHTML = "<li>No strong buy signals currently.</li>";
+  } else {
+    stockUL.innerHTML = "";
+    for (const stock of strongStocks) {
+      stockUL.innerHTML += `<li><strong>${stock.symbol}</strong> ($${stock.price}): ${stock.reason} ${stock.icon}</li>`;
+    }
+  }
+
+  if (strongForex.length === 0) {
+    forexUL.innerHTML = "<li>No forex data available.</li>";
+  } else {
+    forexUL.innerHTML = "";
+    for (const fx of strongForex) {
+      forexUL.innerHTML += `<li><strong>${fx.symbol}</strong> (Rate: ${fx.price}): ${fx.reason} ${fx.icon}</li>`;
+    }
+  }
+
+  if (strongCommodities.length === 0) {
+    commoditiesUL.innerHTML = "<li>No strong buy signals currently.</li>";
+  } else {
+    commoditiesUL.innerHTML = "";
+    for (const comm of strongCommodities) {
+      commoditiesUL.innerHTML += `<li><strong>${comm.symbol}</strong> ($${comm.price}): ${comm.reason} ${comm.icon}</li>`;
+    }
+  }
+}
+
+function toggleGlossary() {
+  const glossaryList = document.getElementById("glossaryList");
+  if (!glossaryList) return;
+  glossaryList.classList.toggle("hidden");
+}
+
+function showBeginnerTip() {
+  const tip = beginnerTips[Math.floor(Math.random() * beginnerTips.length)];
+  const infoBox = document.getElementById("stockInfo");
+  if (!infoBox) return;
+
+  const tipDiv = document.createElement("div");
+  tipDiv.style.marginTop = "10px";
+  tipDiv.style.fontStyle = "italic";
+  tipDiv.textContent = `💡 Beginner tip: ${tip}`;
+
+  infoBox.appendChild(tipDiv);
+}
+</script>
+
 </body>
 </html>
+
