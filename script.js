@@ -215,3 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
   showSuggestions();
 });
 
+if (data.Note) {
+  infoBox.innerHTML = `<p>API limit reached: ${data.Note}</p>`;
+  return;
+}
