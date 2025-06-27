@@ -214,3 +214,4 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("glossaryToggle").addEventListener("click", toggleGlossary);
   showSuggestions();
 });
+
