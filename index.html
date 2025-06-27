@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Beginner Stock Trading Tips</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Beginner Stock Trading Tips</h1>
+
+        <section class="search-section">
+            <input type="text" id="stockInput" placeholder="Enter stock ticker (e.g. AAPL)" />
+            <button id="searchBtn">Get Advice</button>
+            <div id="stockInfo" class="info-box hidden"></div>
+        </section>
+
+        <section class="suggested-section">
+            <h2>🎯 Suggested Stocks</h2>
+            <ul id="suggestedStocks" class="suggested-list">
+                <li>Loading stocks...</li>
+            </ul>
+
+            <h2>🌍 Suggested Forex Pairs</h2>
+            <ul id="suggestedForex" class="suggested-list">
+                <li>Loading forex...</li>
+            </ul>
+
+            <h2>⛏️ Suggested Commodities</h2>
+            <ul id="suggestedCommodities" class="suggested-list">
+                <li>Loading commodities...</li>
+            </ul>
+        </section>
+
+        <section class="glossary-section">
+            <button id="glossaryToggle">📖 Toggle Glossary</button>
+            <ul id="glossaryList" class="glossary-list hidden">
+                <li><strong>Price Change %</strong>: The percent the stock price moved today.</li>
+                <li><strong>✅ Buy Signal</strong>: Price rose more than 2% today.</li>
+                <li><strong>⏳ Wait</strong>: Price moved less than ±2%, no clear trend.</li>
+                <li><strong>⚠️ Sell/Wait</strong>: Price dropped more than 2% today.</li>
+            </ul>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
